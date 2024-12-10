@@ -1,4 +1,6 @@
-import "./App.css";
+import { useEffect, useState } from "react";
+
+import { commands } from "./utils/tauri";
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
@@ -7,6 +9,14 @@ import NotePage from "./pages/NotePage";
 import { UIProvider } from "./contexts/UIContext";
 
 function App() {
+  const [devices, setDevices] = useState<string[]>([]);
+
+  useEffect(() => {
+    commands.listDevices().then((devices) => {
+      setDevices(devices);
+    });
+  }, []);
+
   return (
     <BrowserRouter>
       <UIProvider>
