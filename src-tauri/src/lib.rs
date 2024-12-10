@@ -3,7 +3,10 @@ use std::sync::RwLock;
 use tauri::{AppHandle, Manager};
 
 mod audio;
+mod file;
+mod llm;
 mod permissions;
+mod stt;
 
 #[derive(specta::Type)]
 #[serde(rename_all = "camelCase")]
