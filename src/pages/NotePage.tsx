@@ -1,94 +1,150 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Note, Meeting } from "../types/note";
+import { fetchNote, enhanceNoteWithAI } from "../api/noteApi";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import LiveCaption from "../components/LiveCaption";
+import SidePanel from "../components/SidePanel";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { useUI } from "../contexts/UIContext";
+import NoteControls from "../components/NoteControls";
 
 export default function NotePage() {
   const { id } = useParams();
   const [isNew] = useState(!id);
-  const [isRecording, setIsRecording] = useState(isNew);
+  const [note, setNote] = useState<Note | null>(null);
   const [noteContent, setNoteContent] = useState("");
+  const [noteTitle, setNoteTitle] = useState("");
   const [recordingTime, setRecordingTime] = useState(0);
-  const [transcript, setTranscript] = useState("");
+  const [showHypercharge, setShowHypercharge] = useState(false);
+  const { isPanelOpen } = useUI();
+
+  const {
+    isRecording,
+    isPaused,
+    transcript,
+    currentTranscript,
+    startRecording,
+    pauseRecording,
+    resumeRecording,
+    stopRecording,
+  } = useSpeechRecognition();
 
   useEffect(() => {
-    if (isNew) {
+    if (id && !isNew) {
+      // 기존 노트 데이터 불러오기
+      const loadNote = async () => {
+        const noteData = await fetchNote(id);
+        setNote(noteData);
+        setNoteTitle(noteData.title);
+        setNoteContent(noteData.content);
+      };
+      loadNote();
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (isNew || (note?.meeting && shouldStartRecording(note.meeting))) {
       startRecording();
     }
 
-    // 녹음 시간 타이머
     const timer = setInterval(() => {
-      setRecordingTime((prev) => prev + 1);
+      if (isRecording && !isPaused) {
+        setRecordingTime((prev) => prev + 1);
+      }
     }, 1000);
 
     return () => {
       void stopRecording();
       clearInterval(timer);
     };
-  }, []);
+  }, [isNew, note]);
 
-  const startRecording = async () => {
-    // 여기에 Tauri API를 사용한 녹음 로직 구현
-    console.log("녹음이 시작되었습니다");
+  const shouldStartRecording = (meeting: Meeting) => {
+    const now = new Date();
+    return now >= meeting.startTime;
   };
 
-  const stopRecording = async () => {
-    // 녹음 중지 로직 구현
-    console.log("녹음이 중지되었습니다");
+  const handlePauseResume = async () => {
+    if (isPaused) {
+      await resumeRecording();
+      setShowHypercharge(false);
+    } else {
+      await pauseRecording();
+      setShowHypercharge(true);
+    }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  const handleHypercharge = async () => {
+    const enhancedNote = await enhanceNoteWithAI(noteContent, transcript);
+    setNoteContent(enhancedNote.content);
+    if (!noteTitle) {
+      setNoteTitle(enhancedNote.suggestedTitle);
+    }
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <header className="bg-white border-b p-4">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-lg font-medium">
-            {isNew ? "새로운 노트" : "노트 보기"}
-          </h1>
-        </div>
-      </header>
+    <div className="flex h-full flex-col overflow-hidden bg-gray-50">
+      <main className="flex-1">
+        <PanelGroup direction="horizontal">
+          <Panel defaultSize={100} minSize={50}>
+            <div className="flex h-full flex-col">
+              <header className="border-b bg-white p-4">
+                <input
+                  type="text"
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                  placeholder={isNew ? "제목 없음" : ""}
+                  className="w-full text-lg font-medium focus:outline-none"
+                />
+                {note?.meeting && (
+                  <div className="mt-1 text-sm text-gray-500">
+                    {formatMeetingTime(note.meeting.startTime)}
+                  </div>
+                )}
+              </header>
 
-      <main className="flex-1 w-full">
-        <textarea
-          value={noteContent}
-          onChange={(e) => setNoteContent(e.target.value)}
-          className="w-full h-full resize-none p-4 focus:outline-none"
-          placeholder="노트를 입력하세요..."
-          autoFocus
-        />
-      </main>
-
-      <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl mx-auto z-10">
-        <div className="mx-4 p-4 bg-white rounded-xl shadow-lg border border-gray-100">
-          {isRecording && (
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
-              {transcript || "음성을 인식하는 중..."}
+              <div className="relative flex flex-1 flex-col">
+                <textarea
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                  className="w-full flex-1 resize-none p-4 focus:outline-none"
+                  placeholder="노트를 입력하세요..."
+                  autoFocus
+                />
+                <NoteControls
+                  note={note}
+                  showHypercharge={showHypercharge}
+                  isRecording={isRecording}
+                  isPaused={isPaused}
+                  recordingTime={recordingTime}
+                  onHypercharge={handleHypercharge}
+                  onStart={startRecording}
+                  onPauseResume={handlePauseResume}
+                  currentTranscript={currentTranscript}
+                />
+              </div>
             </div>
-          )}
+          </Panel>
 
-          <div className="flex justify-end">
-            {isRecording ? (
-              <button
-                onClick={() => setIsRecording(false)}
-                className="px-4 py-1.5 rounded-full bg-red-50 text-red-600 text-sm hover:bg-red-100 flex items-center gap-2"
-              >
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                {formatTime(recordingTime)}
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsRecording(true)}
-                className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-sm hover:bg-emerald-100"
-              >
-                녹음 시작
-              </button>
-            )}
-          </div>
-        </div>
-      </footer>
+          {isPanelOpen && (
+            <>
+              <PanelResizeHandle />
+              <Panel defaultSize={30} minSize={30} maxSize={50}>
+                <SidePanel isOpen={isPanelOpen} noteContent={noteContent} />
+              </Panel>
+            </>
+          )}
+        </PanelGroup>
+      </main>
     </div>
   );
 }
+
+const formatMeetingTime = (startTime: Date) => {
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+  const mins = Math.floor(diff / 60);
+  const secs = diff % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};

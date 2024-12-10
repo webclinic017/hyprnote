@@ -28,6 +28,27 @@ export default function Home() {
       duration: "45:30",
       preview: "신규 기능에 대한 사용자 피드백 및 개선사항...",
     },
+    {
+      id: "4",
+      title: "사용자 인터뷰 - 김OO님",
+      date: "2024-03-18",
+      duration: "45:30",
+      preview: "신규 기능에 대한 사용자 피드백 및 개선사항...",
+    },
+    {
+      id: "5",
+      title: "사용자 인터뷰 - 김OO님",
+      date: "2024-03-18",
+      duration: "45:30",
+      preview: "신규 기능에 대한 사용자 피드백 및 개선사항...",
+    },
+    {
+      id: "6",
+      title: "사용자 인터뷰 - 김OO님",
+      date: "2024-03-18",
+      duration: "45:30",
+      preview: "신규 기능에 대한 사용자 피드백 및 개선사항...",
+    },
   ];
 
   const handleNewNote = () => {
