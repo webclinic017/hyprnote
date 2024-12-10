@@ -1,6 +1,7 @@
 use cap_media::feeds::{AudioInputFeed, AudioInputSamplesSender};
-use std::sync::RwLock;
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
+use tokio::sync::RwLock;
 
 mod audio;
 mod file;
@@ -65,6 +66,28 @@ fn stop_recording() {
     audio::AppSounds::StopRecording.play();
 }
 
+#[tauri::command]
+#[specta::specta]
+fn list_recordings(app: AppHandle) -> Result<Vec<(String, PathBuf)>, String> {
+    let recordings_dir = recordings_path(&app);
+
+    if !recordings_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    Ok(Vec::new())
+}
+
+fn recordings_path(app: &AppHandle) -> PathBuf {
+    let path = app.path().app_data_dir().unwrap().join("recordings");
+    std::fs::create_dir_all(&path).unwrap_or_default();
+    path
+}
+
+fn recording_path(app: &AppHandle, recording_id: &str) -> PathBuf {
+    recordings_path(app).join(format!("{}.cap", recording_id))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let specta_builder = tauri_specta::Builder::new()
@@ -75,6 +98,7 @@ pub fn run() {
             start_playback,
             stop_playback,
             permissions::open_permission_settings,
+            file::open_path,
         ])
         .events(tauri_specta::collect_events![]);
 

@@ -1,9 +1,15 @@
+use futures::stream::StreamExt;
+use serde::Serialize;
+use std::{path::Path, path::PathBuf, process::Command};
+use tauri::ipc::Channel;
+
 pub struct Model {
     pub name: String,
     pub local_path: String,
     pub remote_url: String,
 }
 
+// https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
 impl Model {
     pub fn new(name: &str, local_path: &str, remote_url: &str) -> Self {
         Self {
@@ -18,51 +24,105 @@ impl Model {
     }
 }
 
+#[derive(Serialize, specta::Type)]
+pub enum DownloadError {
+    RequestFailed,
+    StreamInterrupted,
+}
+
+#[derive(Serialize, specta::Type, Default)]
+pub struct DownloadEvent {
+    bytes_downloaded: u64,
+    bytes_total: u64,
+    percent: f64,
+    error: Option<DownloadError>,
+}
+
 #[tauri::command]
-#[specta::specta]
-pub async fn download_model(model: Model, window: tauri::Window) {
-    let (tx, mut rx) = tauri::async_runtime::channel::<String>(100);
-
-    tauri::async_runtime::spawn(async move {
-        while let Some(progress) = rx.recv().await {
-            window.emit("download-progress", progress).unwrap();
+pub async fn download_model(model: Model, on_event: Channel<DownloadEvent>) {
+    let response = match reqwest::get(&model.remote_url).await {
+        Ok(resp) if resp.status().is_success() => resp,
+        _ => {
+            let _ = on_event.send(DownloadEvent {
+                error: Some(DownloadError::RequestFailed),
+                ..Default::default()
+            });
+            return;
         }
-    });
+    };
 
-    match reqwest::get(&model.remote_url).await {
-        Ok(response) => {
-            if response.status().is_success() {
-                let total_size = response.content_length().unwrap_or(0);
-                let mut downloaded: u64 = 0;
-                let mut stream = response.bytes_stream();
+    let bytes_total = response.content_length().unwrap_or(0);
+    let mut bytes_downloaded: u64 = 0;
+    let mut stream = response.bytes_stream();
 
-                while let Some(chunk) = stream.next().await {
-                    match chunk {
-                        Ok(bytes) => {
-                            downloaded += bytes.len() as u64;
-                            let percent = (downloaded as f64 / total_size as f64) * 100.0;
-                            let progress = format!(
-                                "Downloaded: {} / {} bytes ({:.2}%)",
-                                downloaded, total_size, percent
-                            );
-                            tx.send(progress).await.unwrap();
-                        }
-                        Err(e) => {
-                            eprintln!("Error while downloading: {}", e);
-                            break;
-                        }
-                    }
-                }
+    while let Some(chunk) = stream.next().await {
+        match chunk {
+            Ok(bytes) => {
+                bytes_downloaded += bytes.len() as u64;
+                let percent = (bytes_downloaded as f64 / bytes_total as f64) * 100.0;
 
-                // Send a final progress update
-                tx.send("Download complete".to_string()).await.unwrap();
-                // Process the content, e.g., save to local_path
-            } else {
-                eprintln!("Failed to download model: {}", response.status());
+                let _ = on_event.send(DownloadEvent {
+                    bytes_downloaded,
+                    bytes_total,
+                    percent,
+                    error: None,
+                });
+            }
+            Err(_) => {
+                let _ = on_event.send(DownloadEvent {
+                    bytes_downloaded,
+                    bytes_total,
+                    percent: (bytes_downloaded as f64 / bytes_total as f64) * 100.0,
+                    error: Some(DownloadError::StreamInterrupted),
+                });
+                break;
             }
         }
-        Err(e) => {
-            eprintln!("Request error: {}", e);
-        }
     }
+
+    let _ = on_event.send(DownloadEvent {
+        bytes_downloaded,
+        bytes_total,
+        percent: 100.0,
+        error: None,
+    });
+}
+
+// https://github.com/CapSoftware/Cap/blob/5a9f72a076041a7095409fe7a2b0f303239698b1/apps/desktop/src-tauri/src/lib.rs#L769
+#[tauri::command]
+#[specta::specta]
+pub async fn open_path(path: PathBuf) -> Result<(), String> {
+    let path_str = path.to_str().ok_or("Invalid path")?;
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .args(["/select,", path_str])
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg("-R")
+            .arg(path_str)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(
+                path.parent()
+                    .ok_or("Invalid path")?
+                    .to_str()
+                    .ok_or("Invalid path")?,
+            )
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+
+    Ok(())
 }

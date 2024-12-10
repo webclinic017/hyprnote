@@ -752,7 +752,7 @@ dependencies = [
 [[package]]
 name = "cap-flags"
 version = "0.1.0"
-source = "git+https://github.com/CapSoftware/Cap?branch=main#5a9f72a076041a7095409fe7a2b0f303239698b1"
+source = "git+https://github.com/CapSoftware/Cap?tag=cap-v0.3.4#8bf9e55d29816d112e77bd1949d5b928fb3a7342"
 dependencies = [
  "serde",
  "specta",
@@ -761,7 +761,7 @@ dependencies = [
 [[package]]
 name = "cap-gpu-converters"
 version = "0.1.0"
-source = "git+https://github.com/CapSoftware/Cap?branch=main#5a9f72a076041a7095409fe7a2b0f303239698b1"
+source = "git+https://github.com/CapSoftware/Cap?tag=cap-v0.3.4#8bf9e55d29816d112e77bd1949d5b928fb3a7342"
 dependencies = [
  "wgpu",
 ]
@@ -769,7 +769,7 @@ dependencies = [
 [[package]]
 name = "cap-media"
 version = "0.1.0"
-source = "git+https://github.com/CapSoftware/Cap?branch=main#5a9f72a076041a7095409fe7a2b0f303239698b1"
+source = "git+https://github.com/CapSoftware/Cap?tag=cap-v0.3.4#8bf9e55d29816d112e77bd1949d5b928fb3a7342"
 dependencies = [
  "cap-flags",
  "cap-gpu-converters",
@@ -804,7 +804,7 @@ dependencies = [
 [[package]]
 name = "cap-project"
 version = "0.1.0"
-source = "git+https://github.com/CapSoftware/Cap?branch=main#5a9f72a076041a7095409fe7a2b0f303239698b1"
+source = "git+https://github.com/CapSoftware/Cap?tag=cap-v0.3.4#8bf9e55d29816d112e77bd1949d5b928fb3a7342"
 dependencies = [
  "either",
  "serde",
@@ -2170,7 +2170,9 @@ dependencies = [
  "cap-media",
  "cpal 0.15.3 (git+https://github.com/RustAudio/cpal?rev=f43d36e55494993bbbde3299af0c53e5cdf4d4cf)",
  "dotenvy_macro",
+ "encoding_rs",
  "flume 0.11.1",
+ "futures",
  "hound",
  "llama-cpp-2",
  "objc",
@@ -3984,9 +3986,8 @@ checksum = "b4ce301924b7887e9d637144fdade93f9dfff9b60981d4ac161db09720d39aa5"
 
 [[package]]
 name = "llama-cpp-2"
-version = "0.1.85"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2850b8070d1037ac23d5e4d31e97abce550581223e9e9e8ff2710cc07fb43fb"
+version = "0.1.86"
+source = "git+https://github.com/utilityai/llama-cpp-rs?rev=4d1df04fb28b247494849d018d55a7fcf42c0ee1#4d1df04fb28b247494849d018d55a7fcf42c0ee1"
 dependencies = [
  "enumflags2",
  "llama-cpp-sys-2",
@@ -3996,9 +3997,8 @@ dependencies = [
 
 [[package]]
 name = "llama-cpp-sys-2"
-version = "0.1.85"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86a6c2164a5dba16ba81c98d4efede8d8869173fd2e392dcd77493afc117c4e3"
+version = "0.1.86"
+source = "git+https://github.com/utilityai/llama-cpp-rs?rev=4d1df04fb28b247494849d018d55a7fcf42c0ee1#4d1df04fb28b247494849d018d55a7fcf42c0ee1"
 dependencies = [
  "bindgen 0.69.5",
  "cc",
