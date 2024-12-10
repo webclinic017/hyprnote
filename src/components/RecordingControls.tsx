@@ -26,13 +26,13 @@ export default function RecordingControls({
           onClick={onPauseResume}
           className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm ${
             isPaused
-              ? "bg-gray-50 text-gray-600 hover:bg-gray-100"
-              : "bg-red-50 text-red-600 hover:bg-red-100"
+              ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              : "bg-red-100 text-red-700 hover:bg-red-200"
           }`}
         >
           <div
             className={`h-2.5 w-2.5 rounded-full ${
-              isPaused ? "bg-gray-500" : "animate-pulse bg-red-500"
+              isPaused ? "bg-gray-600" : "animate-pulse bg-red-600"
             }`}
           />
           {isPaused ? "일시정지 중" : formatTime(recordingTime)}
@@ -40,7 +40,7 @@ export default function RecordingControls({
       ) : (
         <button
           onClick={onStart}
-          className="rounded-full bg-emerald-50 px-4 py-1.5 text-sm text-emerald-600 hover:bg-emerald-100"
+          className="rounded-full bg-emerald-100 px-4 py-1.5 text-sm text-emerald-700 hover:bg-emerald-200"
         >
           녹음 시작
         </button>

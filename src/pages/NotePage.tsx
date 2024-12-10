@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { Note, Meeting } from "../types/note";
 import { fetchNote, enhanceNoteWithAI } from "../api/noteApi";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import LiveCaption from "../components/LiveCaption";
 import SidePanel from "../components/SidePanel";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useUI } from "../contexts/UIContext";

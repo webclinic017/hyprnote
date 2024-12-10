@@ -17,6 +17,18 @@ export default {
           "sans-serif",
         ],
       },
+      keyframes: {
+        marquee: {
+          "0%": { transform: "translateX(100%)" },
+          "100%": { transform: "translateX(-100%)" },
+        },
+      },
+      animation: {
+        marquee: "marquee 10s linear infinite",
+      },
+      transitionTimingFunction: {
+        "ease-in-out-expo": "cubic-bezier(0.87, 0, 0.13, 1)",
+      },
     },
   },
   plugins: [],

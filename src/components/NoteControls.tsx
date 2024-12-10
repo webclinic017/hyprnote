@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Zap } from "lucide-react";
 import type { Note } from "../types/note";
 import LiveCaption from "./LiveCaption";
@@ -26,41 +27,48 @@ export default function NoteControls({
   onStart,
   onPauseResume,
 }: NoteFooterProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <div className="absolute bottom-6 left-1/2 w-full max-w-2xl -translate-x-1/2">
-      <div className="mx-4 rounded-xl border border-gray-100 bg-white p-4 shadow-lg">
-        <div className="flex items-center justify-between space-x-4">
-          <div className="flex gap-2">
-            {note?.meeting?.isVirtual && note?.meeting?.meetingUrl && (
-              <button
-                onClick={() => window.open(note?.meeting?.meetingUrl)}
-                className="rounded-full bg-blue-50 px-4 py-1.5 text-sm text-blue-600 hover:bg-blue-100"
-              >
-                미팅 참여하기
-              </button>
-            )}
-            {showHypercharge && (
-              <button
-                onClick={onHypercharge}
-                className="flex items-center gap-1 rounded-full bg-purple-50 px-4 py-1.5 text-sm text-purple-600 hover:bg-purple-100"
-              >
-                <Zap size={16} />
-                하이퍼차지
-              </button>
-            )}
-          </div>
+    <div
+      className="absolute bottom-6 left-1/2 flex w-full max-w-xl -translate-x-1/2 flex-col items-center gap-4"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div
+        className={`flex items-center justify-center gap-4 transition-opacity duration-300 ${
+          isHovered ? "opacity-100" : "opacity-30"
+        }`}
+      >
+        {note?.meeting?.isVirtual && note?.meeting?.meetingUrl && (
+          <button
+            onClick={() => window.open(note?.meeting?.meetingUrl)}
+            className="rounded-full bg-blue-500 px-4 py-1.5 text-sm text-white transition-colors hover:bg-blue-600"
+          >
+            미팅 참여하기
+          </button>
+        )}
 
-          <LiveCaption text={currentTranscript} />
+        {showHypercharge && (
+          <button
+            onClick={onHypercharge}
+            className="flex items-center gap-1 rounded-full bg-purple-500 px-4 py-1.5 text-sm text-white transition-colors hover:bg-purple-600"
+          >
+            <Zap size={16} />
+            하이퍼차지
+          </button>
+        )}
 
-          <RecordingControls
-            isRecording={isRecording}
-            isPaused={isPaused}
-            recordingTime={recordingTime}
-            onStart={onStart}
-            onPauseResume={onPauseResume}
-          />
-        </div>
+        <RecordingControls
+          isRecording={isRecording}
+          isPaused={isPaused}
+          recordingTime={recordingTime}
+          onStart={onStart}
+          onPauseResume={onPauseResume}
+        />
       </div>
+
+      <LiveCaption text={currentTranscript} />
     </div>
   );
 }
