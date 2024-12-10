@@ -7,6 +7,7 @@ mod audio;
 mod file;
 mod llm;
 mod permissions;
+mod segmentation;
 mod stt;
 
 #[derive(specta::Type)]
@@ -78,6 +79,13 @@ fn list_recordings(app: AppHandle) -> Result<Vec<(String, PathBuf)>, String> {
     Ok(Vec::new())
 }
 
+#[tauri::command]
+#[specta::specta]
+fn ort_segmentation(_app: AppHandle) -> Result<(), String> {
+    segmentation::segment(&[0.0; 1000]);
+    Ok(())
+}
+
 fn recordings_path(app: &AppHandle) -> PathBuf {
     let path = app.path().app_data_dir().unwrap().join("recordings");
     std::fs::create_dir_all(&path).unwrap_or_default();
@@ -97,6 +105,7 @@ pub fn run() {
             stop_recording,
             start_playback,
             stop_playback,
+            ort_segmentation,
             permissions::open_permission_settings,
             file::open_path,
         ])
