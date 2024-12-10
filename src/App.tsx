@@ -12,8 +12,10 @@ function App() {
   const [devices, setDevices] = useState<string[]>([]);
 
   useEffect(() => {
-    commands.listDevices().then((devices) => {
-      setDevices(devices);
+    commands.listAudioDevices().then((devices) => {
+      if (devices.status === "ok") {
+        setDevices(devices.data);
+      }
     });
   }, []);
 

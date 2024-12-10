@@ -1,23 +1,59 @@
+use cap_media::feeds::{AudioInputFeed, AudioInputSamplesSender};
 use std::sync::RwLock;
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 
 mod audio;
 mod permissions;
 
 #[derive(specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct App {}
-
-#[tauri::command]
-#[specta::specta]
-fn list_devices() -> Vec<String> {
-    vec!["Device 1".to_string(), "Device 2".to_string()]
+pub struct App {
+    #[serde(skip)]
+    handle: AppHandle,
+    #[serde(skip)]
+    audio_input_feed: Option<AudioInputFeed>,
+    #[serde(skip)]
+    audio_input_tx: AudioInputSamplesSender,
 }
 
 #[tauri::command]
 #[specta::specta]
-fn start_recording() {
+async fn list_audio_devices() -> Result<Vec<String>, ()> {
+    if !permissions::do_permissions_check(false)
+        .microphone
+        .permitted()
+    {
+        return Ok(vec![]);
+    }
+
+    Ok(AudioInputFeed::list_devices().keys().cloned().collect())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn start_playback(_app: AppHandle, _audio_id: String) {}
+
+#[tauri::command]
+#[specta::specta]
+async fn stop_playback(_app: AppHandle, _audio_id: String) {}
+
+#[tauri::command]
+#[specta::specta]
+fn start_recording(app: AppHandle) -> Result<(), String> {
     audio::AppSounds::StartRecording.play();
+
+    let id = uuid::Uuid::new_v4().to_string();
+
+    let recording_dir = app
+        .path()
+        .app_data_dir()
+        .unwrap()
+        .join("sessions")
+        .join(format!("{id}.hypr"));
+
+    std::fs::create_dir_all(&recording_dir).map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -30,9 +66,11 @@ fn stop_recording() {
 pub fn run() {
     let specta_builder = tauri_specta::Builder::new()
         .commands(tauri_specta::collect_commands![
-            list_devices,
+            list_audio_devices,
             start_recording,
             stop_recording,
+            start_playback,
+            stop_playback,
             permissions::open_permission_settings,
         ])
         .events(tauri_specta::collect_events![]);
@@ -71,14 +109,26 @@ pub fn run() {
         );
     }
 
+    let (audio_input_tx, _audio_input_rx) = AudioInputFeed::create_channel();
+
     builder
         .plugin(tauri_plugin_shell::init())
         // TODO: https://v2.tauri.app/plugin/updater/#building
         // .plugin(tauri_plugin_updater::Builder::new().build())
-        .manage(RwLock::new(App {}))
         .invoke_handler({
             let handler = specta_builder.invoke_handler();
             move |invoke| handler(invoke)
+        })
+        .setup(move |app| {
+            let app = app.handle().clone();
+
+            app.manage(RwLock::new(App {
+                handle: app.clone(),
+                audio_input_tx,
+                audio_input_feed: None,
+            }));
+
+            Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

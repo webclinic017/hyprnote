@@ -5,8 +5,30 @@
 
 
 export const commands = {
-async listDevices() : Promise<string[]> {
-    return await TAURI_INVOKE("list_devices");
+async listAudioDevices() : Promise<Result<string[], null>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_audio_devices") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async startRecording() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_recording") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopRecording() : Promise<void> {
+    await TAURI_INVOKE("stop_recording");
+},
+async startPlayback(audioId: string) : Promise<void> {
+    await TAURI_INVOKE("start_playback", { audioId });
+},
+async stopPlayback(audioId: string) : Promise<void> {
+    await TAURI_INVOKE("stop_playback", { audioId });
 },
 async openPermissionSettings(permission: OSPermission) : Promise<void> {
     await TAURI_INVOKE("open_permission_settings", { permission });

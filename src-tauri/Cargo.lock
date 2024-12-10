@@ -2189,6 +2189,7 @@ dependencies = [
  "tauri-plugin-stronghold",
  "tauri-plugin-updater",
  "tauri-specta",
+ "uuid",
  "whisper-rs",
 ]
 
