@@ -1,6 +1,7 @@
 use std::sync::RwLock;
 use tauri::Manager;
 
+mod audio;
 mod permissions;
 
 #[derive(specta::Type)]
@@ -13,11 +14,25 @@ fn list_devices() -> Vec<String> {
     vec!["Device 1".to_string(), "Device 2".to_string()]
 }
 
+#[tauri::command]
+#[specta::specta]
+fn start_recording() {
+    audio::AppSounds::StartRecording.play();
+}
+
+#[tauri::command]
+#[specta::specta]
+fn stop_recording() {
+    audio::AppSounds::StopRecording.play();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let specta_builder = tauri_specta::Builder::new()
         .commands(tauri_specta::collect_commands![
             list_devices,
+            start_recording,
+            stop_recording,
             permissions::open_permission_settings,
         ])
         .events(tauri_specta::collect_events![]);
