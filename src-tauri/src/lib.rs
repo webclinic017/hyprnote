@@ -4,6 +4,7 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 mod audio;
+mod db;
 mod diarizer;
 mod file;
 mod llm;
@@ -119,7 +120,13 @@ pub fn run() {
         )
         .expect("Failed to export typescript bindings");
 
-    let mut builder = tauri::Builder::default().plugin(tauri_plugin_positioner::init());
+    let mut builder = tauri::Builder::default()
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations(&db::url(), db::migrations())
+                .build(),
+        )
+        .plugin(tauri_plugin_positioner::init());
 
     // https://v2.tauri.app/plugin/single-instance/#focusing-on-new-instance
     #[cfg(desktop)]
