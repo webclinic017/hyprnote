@@ -1,10 +1,9 @@
 fn play_audio(bytes: &'static [u8]) {
     use rodio::{Decoder, OutputStream, Sink};
-    use std::io::Cursor;
 
     std::thread::spawn(move || {
         if let Ok((_, stream)) = OutputStream::try_default() {
-            let file = Cursor::new(bytes);
+            let file = std::io::Cursor::new(bytes);
             let source = Decoder::new(file).unwrap();
             let sink = Sink::try_new(&stream).unwrap();
             sink.append(source);

@@ -4,10 +4,11 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 mod audio;
+mod diarizer;
 mod file;
 mod llm;
 mod permissions;
-mod segmentation;
+mod session;
 mod stt;
 
 #[derive(specta::Type)]
@@ -82,7 +83,6 @@ fn list_recordings(app: AppHandle) -> Result<Vec<(String, PathBuf)>, String> {
 #[tauri::command]
 #[specta::specta]
 fn ort_segmentation(_app: AppHandle) -> Result<(), String> {
-    segmentation::segment(&[0.0; 1000]);
     Ok(())
 }
 

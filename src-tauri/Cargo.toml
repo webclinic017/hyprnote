@@ -55,3 +55,4 @@ candle-examples = { git = "https://github.com/huggingface/candle", tag = "0.8.1"
 candle-core = { version = "0.8.1", features = ["metal"] }
 candle-transformers = { version = "0.8.1", features = ["metal"] }
 candle-nn = { version = "0.8.1", features = ["metal"] }
+ndarray = "0.16.1"
