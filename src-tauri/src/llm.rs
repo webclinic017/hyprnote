@@ -1,12 +1,12 @@
 use tokenizers::Tokenizer;
 use tokio::sync::Mutex;
 
-use candle_core::quantized::gguf_file;
-use candle_core::Device;
-use candle_core::Tensor;
+use candle_core::{quantized::gguf_file, Device, Tensor};
 use candle_examples::token_output_stream::TokenOutputStream;
-use candle_transformers::generation::{LogitsProcessor, Sampling};
-use candle_transformers::models::quantized_qwen2::ModelWeights as Qwen2;
+use candle_transformers::{
+    generation::{LogitsProcessor, Sampling},
+    models::quantized_qwen2::ModelWeights as Qwen2,
+};
 
 pub struct LLM {
     device: Device,
@@ -32,11 +32,9 @@ impl LLM {
 
     // https://github.com/huggingface/candle/blob/main/candle-examples/examples/quantized-qwen2-instruct/main.rs
     pub async fn run(&self, prompt: &str) -> anyhow::Result<String> {
-        let temperature = 0.3;
         let sample_len: usize = 1200;
         let repeat_penalty = 1.1;
         let repeat_last_n = 64;
-        let seed = 299792458;
 
         let prompt_str = format!(
             "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
@@ -52,14 +50,7 @@ impl LLM {
         let tokens = tokens.get_ids();
 
         let mut all_tokens = vec![];
-        let mut logits_processor = {
-            let sampling = if temperature <= 0. {
-                Sampling::ArgMax
-            } else {
-                Sampling::All { temperature }
-            };
-            LogitsProcessor::from_sampling(seed, sampling)
-        };
+        let mut logits_processor = self.create_logits_processor();
 
         let input = Tensor::new(tokens, &self.device)?.unsqueeze(0)?;
         let logits = self.model.lock().await.forward(&input, 0)?;
@@ -112,6 +103,19 @@ impl LLM {
         }
 
         Ok(generated_text)
+    }
+
+    fn create_logits_processor(&self) -> LogitsProcessor {
+        let seed = 299792458;
+        let temperature = 0.3;
+
+        let sampling = if temperature <= 0. {
+            Sampling::ArgMax
+        } else {
+            Sampling::All { temperature }
+        };
+
+        LogitsProcessor::from_sampling(seed, sampling)
     }
 }
 
