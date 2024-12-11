@@ -49,10 +49,10 @@ flume = "0.11.1"
 objc = "0.2.7"
 
 encoding_rs = "0.8.35"
+ndarray = "0.16.1"
 ort = { version = "2.0.0-rc.9", features = ["coreml"] }
 tokenizers = "0.19.1"
 candle-examples = { git = "https://github.com/huggingface/candle", tag = "0.8.1" }
 candle-core = { version = "0.8.1", features = ["metal"] }
 candle-transformers = { version = "0.8.1", features = ["metal"] }
 candle-nn = { version = "0.8.1", features = ["metal"] }
-ndarray = "0.16.1"

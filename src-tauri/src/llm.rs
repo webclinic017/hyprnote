@@ -1,5 +1,5 @@
-use tokio::sync::Mutex;
 use tokenizers::Tokenizer;
+use tokio::sync::Mutex;
 
 use candle_core::quantized::gguf_file;
 use candle_core::Device;
@@ -8,47 +8,48 @@ use candle_examples::token_output_stream::TokenOutputStream;
 use candle_transformers::generation::{LogitsProcessor, Sampling};
 use candle_transformers::models::quantized_qwen2::ModelWeights as Qwen2;
 
-
-pub struct LLMState {
+pub struct LLM {
     device: Device,
     model: Mutex<Qwen2>,
     tokenizer: Tokenizer,
 }
 
-impl LLMState {
+impl LLM {
     pub async fn new(tokenizer_path: &str, model_path: &str) -> anyhow::Result<Self> {
         let device = Device::new_metal(0)?;
         let tokenizer = Tokenizer::from_file(tokenizer_path).map_err(anyhow::Error::msg)?;
+
         let mut file = std::fs::File::open(&model_path)?;
         let model = gguf_file::Content::read(&mut file).map_err(|e| e.with_path(model_path))?;
         let model = Qwen2::from_gguf(model, &mut file, &device)?;
+
         Ok(Self {
             device,
-            model: Mutex::new(model),
             tokenizer,
+            model: Mutex::new(model),
         })
     }
 
     // https://github.com/huggingface/candle/blob/main/candle-examples/examples/quantized-qwen2-instruct/main.rs
     pub async fn run(&self, prompt: &str) -> anyhow::Result<String> {
-        let mut tos = TokenOutputStream::new(self.tokenizer.clone());
+        let temperature = 0.3;
+        let sample_len: usize = 1200;
+        let repeat_penalty = 1.1;
+        let repeat_last_n = 64;
+        let seed = 299792458;
+
         let prompt_str = format!(
             "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
             prompt
         );
+
+        let mut tos = TokenOutputStream::new(self.tokenizer.clone());
 
         let tokens = tos
             .tokenizer()
             .encode(prompt_str, true)
             .map_err(anyhow::Error::msg)?;
         let tokens = tokens.get_ids();
-
-        // Define default generation parameters
-        let temperature = 0.8;
-        let sample_len: usize = 1000;
-        let repeat_penalty = 1.1;
-        let repeat_last_n = 64;
-        let seed = 299792458;
 
         let mut all_tokens = vec![];
         let mut logits_processor = {
@@ -60,7 +61,6 @@ impl LLMState {
             LogitsProcessor::from_sampling(seed, sampling)
         };
 
-        // Process the initial prompt
         let input = Tensor::new(tokens, &self.device)?.unsqueeze(0)?;
         let logits = self.model.lock().await.forward(&input, 0)?;
         let logits = logits.squeeze(0)?;
@@ -72,7 +72,6 @@ impl LLMState {
             generated_text.push_str(&t);
         }
 
-        // Generate the rest of the tokens
         let eos_token = *tos.tokenizer().get_vocab(true).get("<|im_end|>").unwrap();
         let to_sample = sample_len.saturating_sub(1);
 
@@ -123,9 +122,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_start_llm() {
-        let llm = LLMState::new(
-            "/Users/yujonglee/dev/company/hypr/src-tauri/tmp/tokenizer.json",
-            "/Users/yujonglee/dev/company/hypr/src-tauri/tmp/qwen2-0.5b-instruct-q4_0.gguf",
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+
+        let llm = LLM::new(
+            &format!("{}/models/tokenizer.json", manifest_dir),
+            &format!("{}/models/llm.gguf", manifest_dir),
         )
         .await
         .unwrap();
@@ -134,4 +135,3 @@ mod tests {
         assert!(result.len() > 1);
     }
 }
-
