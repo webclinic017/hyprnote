@@ -2,11 +2,10 @@ import { useState } from "react";
 import { Send } from "lucide-react";
 
 interface SidePanelProps {
-  isOpen: boolean;
   noteContent: string;
 }
 
-export default function SidePanel({ isOpen, noteContent }: SidePanelProps) {
+export default function SidePanel({ noteContent }: SidePanelProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<
     Array<{ text: string; isUser: boolean }>
