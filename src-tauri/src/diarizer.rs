@@ -167,6 +167,6 @@ mod tests {
 
         let diarizer = Diarizer::new().unwrap();
         let result = diarizer.run(&samples).unwrap();
-        println!("{:?}", result);
+        assert!(result.len() > 1);
     }
 }
