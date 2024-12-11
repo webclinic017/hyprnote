@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-
-import { commands } from "./utils/tauri";
+import "./App.css";
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
@@ -9,16 +7,6 @@ import NotePage from "./pages/NotePage";
 import { UIProvider } from "./contexts/UIContext";
 
 function App() {
-  const [devices, setDevices] = useState<string[]>([]);
-
-  useEffect(() => {
-    commands.listAudioDevices().then((devices) => {
-      if (devices.status === "ok") {
-        setDevices(devices.data);
-      }
-    });
-  }, []);
-
   return (
     <BrowserRouter>
       <UIProvider>
